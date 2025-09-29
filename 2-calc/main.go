@@ -59,8 +59,7 @@ func scanInput() string {
 
 func parseNumbers(value string) ([]float64, error) {
 	numbers := []float64{}
-	parts := strings.SplitSeq(value, ",")
-	for part := range parts {
+	for part := range strings.SplitSeq(value, ",") {
 		num, err := strconv.ParseFloat(strings.TrimSpace(part), 64)
 		if err != nil {
 			return nil, err
