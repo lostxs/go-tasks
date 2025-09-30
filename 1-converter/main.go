@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -31,53 +32,65 @@ func main() {
 	fmt.Println("📊 Exchange rates")
 	fmt.Printf("USD = %.2f RUB\n", UsdToRub)
 	fmt.Printf("EUR = %.2f RUB\n", EurToRub)
+	currencies := joinCurrencies(&exchanges)
 	for {
-		source := getSourceCurrency()
-		if _, ok := exchanges[source]; !ok {
-			fmt.Println("Invalid currency")
+		source, err := getCurrency("Enter source currency", currencies, &exchanges)
+		if err != nil {
+			fmt.Println(err)
 			continue
 		}
-		target := getTargetCurrency()
-		if _, ok := exchanges[target]; !ok {
-			fmt.Println("Invalid currency")
+		amount, err := getAmount()
+		if err != nil {
+			fmt.Println(err)
 			continue
 		}
-		amount := getAmount()
-		if amount < 0 {
-			fmt.Println("Invalid amount")
+		target, err := getCurrency("Enter target currency", currencies, &exchanges)
+		if err != nil {
+			fmt.Println(err)
 			continue
 		}
-		exchange := calculateExchange(source, target, amount, exchanges)
-		fmt.Println(exchange)
+		exchange := calculateExchange(source, target, amount, &exchanges)
+		fmt.Printf("Exchange result: %.2f %s = %.2f %s\n", amount, source, exchange, target)
 	}
 }
 
-func getSourceCurrency() string {
-	var source string
-	fmt.Printf("Enter source currency (USD,EUR,RUB): ")
-	fmt.Scan(&source)
-	return source
+func joinCurrencies(exchanges *exchangesMap) string {
+	var keys string
+	first := true
+	for key := range *exchanges {
+		if !first {
+			keys += ","
+		}
+		keys += key
+		first = false
+	}
+	return keys
 }
 
-func getTargetCurrency() string {
-	var target string
-	fmt.Printf("Enter target currency (USD,EUR,RUB): ")
-	fmt.Scan(&target)
-	return target
+func getCurrency(prompt, currencies string, exchanges *exchangesMap) (string, error) {
+	var curr string
+	fmt.Printf("%s (%v): ", prompt, currencies)
+	fmt.Scan(&curr)
+	if _, ok := (*exchanges)[curr]; !ok {
+		return "", errors.New("Invalid currency")
+	}
+	return curr, nil
 }
 
-func getAmount() float64 {
+func getAmount() (float64, error) {
 	var amount float64
 	fmt.Print("Enter amount: ")
 	fmt.Scan(&amount)
-	return amount
+	if amount >= 0 {
+		return amount, nil
+	}
+	return 0, errors.New("Invalid amount")
 }
 
-func calculateExchange(source, target string, amount float64, exchanges exchangesMap) string {
+func calculateExchange(source, target string, amount float64, exchanges *exchangesMap) float64 {
 	if source == target {
-		return fmt.Sprintf("%.2f %s = %.2f %s", amount, source, amount, target)
+		return amount
 	}
-	rate := exchanges[source][target]
-	exchange := amount * rate
-	return fmt.Sprintf("%.2f %s = %.2f %s", amount, source, exchange, target)
+	rate := (*exchanges)[source][target]
+	return amount * rate
 }
