@@ -5,86 +5,92 @@ import (
 	"fmt"
 )
 
-const (
-	UsdToEur = 0.95
-	UsdToRub = 94.20
-)
+type exchangesMap = map[string]map[string]float64
 
 func main() {
-	eurToRub := UsdToRub / UsdToEur
+	const (
+		UsdToEur = 0.95
+		UsdToRub = 94.20
+		EurToUsd = 1 / UsdToEur
+		EurToRub = UsdToRub / UsdToEur
+	)
+	exchanges := exchangesMap{
+		"USD": {
+			"EUR": UsdToEur,
+			"RUB": UsdToRub,
+		},
+		"EUR": {
+			"USD": EurToUsd,
+			"RUB": EurToRub,
+		},
+		"RUB": {
+			"USD": 1 / UsdToRub,
+			"EUR": UsdToEur / UsdToRub,
+		},
+	}
 
 	fmt.Println("📊 Exchange rates")
-	fmt.Printf("1 USD = %.2f EUR\n", UsdToEur)
-	fmt.Printf("2 USD = %.2f RUB\n", UsdToRub)
-	fmt.Printf("3 EUR = %.2f RUB\n", eurToRub)
-
+	fmt.Printf("USD = %.2f RUB\n", UsdToRub)
+	fmt.Printf("EUR = %.2f RUB\n", EurToRub)
+	currencies := joinCurrencies(&exchanges)
 	for {
-		source, err := getCurrency("Enter source currency")
+		source, err := getCurrency("Enter source currency", currencies, &exchanges)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		amount, err := getAmount("Enter amount")
+		amount, err := getAmount()
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		target, err := getCurrency("Enter target currency")
+		target, err := getCurrency("Enter target currency", currencies, &exchanges)
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		exchange := calculateExchange(amount, source, target)
-		fmt.Printf("💱 Result: %.2f %s = %.2f %s\n\n", amount, source, exchange, target)
+		exchange := calculateExchange(source, target, amount, &exchanges)
+		fmt.Printf("Exchange result: %.2f %s = %.2f %s\n", amount, source, exchange, target)
 	}
 }
 
-func getCurrency(prompt string) (string, error) {
-	var input string
-	fmt.Printf("%s (USD,EUR,RUB): ", prompt)
-	fmt.Scan(&input)
-	if input == "USD" || input == "EUR" || input == "RUB" {
-		return input, nil
+func joinCurrencies(exchanges *exchangesMap) string {
+	var keys string
+	first := true
+	for key := range *exchanges {
+		if !first {
+			keys += ","
+		}
+		keys += key
+		first = false
 	}
-	return "", errors.New("❌ Invalid currency, try again.")
+	return keys
 }
 
-func getAmount(prompt string) (float64, error) {
-	var input float64
-	fmt.Printf("%s: ", prompt)
-	fmt.Scan(&input)
-	if input >= 0 {
-		return input, nil
+func getCurrency(prompt, currencies string, exchanges *exchangesMap) (string, error) {
+	var curr string
+	fmt.Printf("%s (%v): ", prompt, currencies)
+	fmt.Scan(&curr)
+	if _, ok := (*exchanges)[curr]; !ok {
+		return "", errors.New("Invalid currency")
 	}
-	return 0, errors.New("❌ Invalid amount, try again.")
+	return curr, nil
 }
 
-func calculateExchange(amount float64, source, target string) float64 {
+func getAmount() (float64, error) {
+	var amount float64
+	fmt.Print("Enter amount: ")
+	fmt.Scan(&amount)
+	if amount >= 0 {
+		return amount, nil
+	}
+	return 0, errors.New("Invalid amount")
+}
+
+func calculateExchange(source, target string, amount float64, exchanges *exchangesMap) float64 {
 	if source == target {
 		return amount
 	}
-	switch source {
-	case "USD":
-		switch target {
-		case "EUR":
-			return amount * UsdToEur
-		case "RUB":
-			return amount * UsdToRub
-		}
-	case "EUR":
-		switch target {
-		case "USD":
-			return amount / UsdToEur
-		case "RUB":
-			return amount * (UsdToRub / UsdToEur)
-		}
-	case "RUB":
-		switch target {
-		case "USD":
-			return amount / UsdToRub
-		case "EUR":
-			return amount / (UsdToRub / UsdToEur)
-		}
-	}
-	return 0
+	rate := (*exchanges)[source][target]
+	return amount * rate
 }
