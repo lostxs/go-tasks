@@ -1,14 +1,15 @@
 package main
 
 import (
-	"3-struct/bins"
+	"3-struct/bin"
+	"3-struct/storage"
 	"fmt"
 )
 
 func main() {
-	fmt.Println("Bins prog")
-	binList := bins.NewBinList()
-	bin := bins.NewBin("1", "first bin", false)
-	binList.AddBin(bin)
-	binList.PrintBinList()
+	storage := storage.NewStorage()
+	bin := bin.NewBin("2", "new bin 2", true)
+	storage.AddBin(*bin)
+	bins := storage.GetBins()
+	fmt.Println(bins)
 }
