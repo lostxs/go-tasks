@@ -7,59 +7,52 @@ import (
 	"strings"
 )
 
+var menu = map[string]func([]float64) float64{
+	"AVG": calcAvg,
+	"SUM": calcSum,
+	"MED": calcMedian,
+}
+
 func main() {
 	fmt.Println("___ CALCULATOR ___")
+MENU:
 	for {
 		operation := scanOperation()
 		if operation == "q" {
-			break
+			break MENU
 		}
-		input := scanInput()
-		numbers, err := parseNumbers(input)
-		if err != nil {
-			fmt.Println(err)
-			continue
+		menuFunc, ok := menu[operation]
+		if !ok {
+			fmt.Println("Unknown operation")
+			continue MENU
 		}
-		outputResult(operation, numbers)
-	}
-}
-
-func outputResult(operation string, numbers []float64) {
-	switch operation {
-	case "AVG":
-		average := calcAvg(numbers)
-		result := fmt.Sprintf("The average is: %.2f", average)
-		fmt.Println(result)
-	case "SUM":
-		sum := calcSum(numbers)
-		result := fmt.Sprintf("The sum is: %.2f", sum)
-		fmt.Println(result)
-	case "MED":
-		med := calcMedian(numbers)
-		result := fmt.Sprintf("The median is: %.2f", med)
-		fmt.Println(result)
-	default:
-		fmt.Println("Unknown operation")
+	NUMBERS:
+		for {
+			numbers, err := scanNumbers()
+			if err != nil {
+				fmt.Println(err)
+				continue NUMBERS
+			}
+			result := menuFunc(numbers)
+			fmt.Printf("Result: %.2f\n", result)
+			break NUMBERS
+		}
 	}
 }
 
 func scanOperation() string {
-	var operation string
 	fmt.Print("Enter operation (AVG,SUM,MED) or q for exit: ")
+	var operation string
 	fmt.Scan(&operation)
 	return operation
 }
 
-func scanInput() string {
-	var input string
+func scanNumbers() ([]float64, error) {
 	fmt.Print("Enter numbers separated by commas: ")
+	var input string
 	fmt.Scan(&input)
-	return input
-}
-
-func parseNumbers(value string) ([]float64, error) {
 	numbers := []float64{}
-	for part := range strings.SplitSeq(value, ",") {
+	for part := range strings.SplitSeq(input, ",") {
 		num, err := strconv.ParseFloat(strings.TrimSpace(part), 64)
 		if err != nil {
 			return nil, err
