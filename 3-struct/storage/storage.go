@@ -45,6 +45,28 @@ func (s *StorageWithDb) AddBin(bin *bin.Bin) {
 	s.save()
 }
 
+func (s *StorageWithDb) UpdateBin(updated *bin.Bin) {
+	for i, b := range s.Bins {
+		if b.ID == updated.ID {
+			s.Bins[i] = *updated
+			s.save()
+			return
+		}
+	}
+	s.AddBin(updated)
+}
+
+func (s *StorageWithDb) DeleteBin(id string) {
+	var bins []bin.Bin
+	for _, b := range s.Bins {
+		if b.ID != id {
+			bins = append(bins, b)
+		}
+	}
+	s.Bins = bins
+	s.save()
+}
+
 func (s *StorageWithDb) GetBins() []bin.Bin {
 	var bins []bin.Bin
 	bins = append(bins, s.Bins...)
@@ -52,17 +74,9 @@ func (s *StorageWithDb) GetBins() []bin.Bin {
 }
 
 func (s *StorageWithDb) save() {
-	data, err := s.toJsonBytes()
+	data, err := json.Marshal(s.Storage)
 	if err != nil {
 		fmt.Println(err)
 	}
 	s.db.Write(data)
-}
-
-func (s *Storage) toJsonBytes() ([]byte, error) {
-	buf, err := json.Marshal(s)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
 }
