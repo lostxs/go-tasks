@@ -1,6 +1,7 @@
 package bin
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -18,4 +19,8 @@ func NewBin(id, name string, private bool) *Bin {
 		Private:   private,
 		CreatedAt: time.Now(),
 	}
+}
+
+func (bin *Bin) Print() {
+	fmt.Printf("ID: %s\nName: %s\n", bin.ID, bin.Name)
 }
